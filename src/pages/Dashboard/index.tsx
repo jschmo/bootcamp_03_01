@@ -5,7 +5,7 @@ import api from '../../services/api';
 
 import logoImg from '../../assets/logo.svg';
 
-import { Title, Form, Repositories } from './styles';
+import { Title, Form, Repositories, Error } from './styles';
 
 interface Repository {
   full_name: string;
@@ -21,6 +21,8 @@ interface Repository {
 const Dashboard: React.FC = () => {
   const [newRepo, setNewRepo] = useState('');
 
+  const [inputError, setInputError] = useState('');
+
   const [repositories, setRepositories] = useState<Repository[]>([]);
 
   async function handleAddRepository(
@@ -28,19 +30,27 @@ const Dashboard: React.FC = () => {
   ): Promise<void> {
     event.preventDefault();
     //    console.log(newRepo);
-    const response = await api.get<Repository>(`repos/${newRepo}`);
-    const repository = response.data;
+    if (!newRepo) {
+      setInputError('Digite o autor/nome do repositório');
+    } else {
+      try {
+        const response = await api.get<Repository>(`repos/${newRepo}`);
+        const repository = response.data;
 
-    setRepositories([...repositories, repository]);
-    setNewRepo('');
-    console.log(response.data);
+        setRepositories([...repositories, repository]);
+        setNewRepo('');
+        setInputError('');
+      } catch (err) {
+        setInputError(`Erro ao buscar por repositório:${newRepo}`);
+      }
+    }
   }
 
   return (
     <>
       <img src={logoImg} alt="Github Explorer" />
       <Title>Explore Reposit&oacute;rios no Github</Title>
-      <Form onSubmit={handleAddRepository}>
+      <Form hasError={!!inputError} onSubmit={handleAddRepository}>
         <input
           value={newRepo}
           onChange={e => setNewRepo(e.target.value)}
@@ -48,6 +58,7 @@ const Dashboard: React.FC = () => {
         />
         <button type="submit">Pesquisar</button>
       </Form>
+      {inputError && <Error>{inputError}</Error>}
       <Repositories>
         {repositories.map(repository => (
           <a key={repository.full_name} href="teste">
